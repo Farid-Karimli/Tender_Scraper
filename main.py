@@ -2,52 +2,90 @@ import requests
 from bs4 import BeautifulSoup
 import googlesearch
 import time
+from urllib3.exceptions import InsecureRequestWarning
+
 import func
 from urllib.parse import urlparse
+import warnings
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
-# scraper.get_links()
+# func.get_links()
 tender_data = {}
+total_tenders = 0
 
-links_10 = ['http://sdf.gov.az/az/generic/event/Detail/285/28',  # random 10 links from the get_links() function
-            # 'https://www.azadliq.org/a/qarabagi-tiken-shirketler/31235984.html',
-            'https://www.oilfund.az/index.php/fund/press-room/advertisements/101',
-            'http://www.azerbaijan-news.az/view-116581/baki-seher-icra-hakimiyyeti-menzil-kommunal-teserrufati-departamentinin-aciq-tender-elani',
-            'http://www.respublica-news.az/index.php/dig-r-x-b-rl-r/reklam-v-elanlar/item/31467-tender-elanlari',
-            'https://bsc.az/news/korporativ-m%C9%99hsullar%C4%B1n-istehsal%C4%B1-%C3%BCzr%C9%99-tender-elan%C4%B1',  #
-            'https://www.adb.org/sites/default/files/institutional-document/32150/procurement-guidelines-az.pdf',
-            # PROBLEM: pdf file
-            'https://genprosecutor.gov.az/az/post/2222',
-            'https://www.facebook.com/tender.satinalma.techizat/posts/daha-bir-maraql%C4%B1-tender-elan%C4%B1n%C9%99qliyyat-rabit%C9%99-v%C9%99-y%C3%BCks%C9%99k-texnologiyalar-nazirliyi/2885955568085994/',
-            'https://tourism.gov.az/page/tenders?page=2',
-            ]
+# links = func.get_links()
+links = open("tender_links.txt", 'r')
 
-url = links_10[4]
-
-for link in links_10:
+"""for link in links:
+    print(link)
+    link = link.replace("\n",'')
     t = urlparse(link).netloc
-    domain = '.'.join(t.split('.')[1:])
+    if 'www' not in t:
+        domain =  '.'.join(t.split('.')[0:])
+    else:
+        domain = '.'.join(t.split('.')[1:])
+    print(domain)
 
     if ".pdf" in link:
-        print('Requested file is a PDF file.')
+        print('Error: Requested file is a PDF file. ')
+        print()
+        tender_data[domain] = 'Does not have tender announcements'
+        continue
     else:
         print('connecting to', domain)
 
     page = requests.get(link, verify=False)
     soup = BeautifulSoup(page.content, 'html.parser')
     title = str(soup.title)
+
     if title == '' or title is None:
         print('Title does not exist or is empty.')
+        tender_data[domain] = 'Does not have tender announcements'
+        continue
     else:
         title = title.replace("<title>", "").replace('</title>', '')
-        print(title)
+        print("Title: ", title.strip())
         print()
 
-    title_valid = func.check_title(title)
+    many_tenders = func.many_tenders(soup)
+    organization = func.check_organization(soup, domain)
 
-    if title_valid:
+    if many_tenders:
+        print('Many tenders')
+        tenders = func.parse_page(soup)
+        print('tenders =', tenders)
+        total_tenders += tenders
+    else:
+        tenders = 1
+        total_tenders += 1
 
-        tender_data[domain] = 'Has tender announcements'
+    tender_data[domain] = [organization, tenders, link]"""
 
-    page.close()
+    # page.close()
 
-print(tender_data)
+
+
+
+
+
+
+
+
+
+
+
+
+page = requests.get("https://fed.az/az/tenderler", verify=False)
+soup = BeautifulSoup(page.content, 'html.parser')
+# title = str(soup.title)
+print(func.many_tenders((soup)))
+many_tenders = func.many_tenders(soup)
+if many_tenders:
+    print('Many tenders')
+    tenders = func.parse_page(soup)
+    print('tenders =', tenders)
+    total_tenders += tenders
+else:
+    tenders = 1
+    total_tenders += 1
+print('total_tenders =', total_tenders)
