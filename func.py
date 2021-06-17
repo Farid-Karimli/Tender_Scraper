@@ -1,7 +1,10 @@
+
 import googlesearch
 import requests
 import multiprocessing
 # Initiating the search
+from bs4 import BeautifulSoup
+
 
 def get_links():
     tender_links = []
@@ -38,26 +41,30 @@ def parse_page(soup): #this function should parse any page that has multiple ten
         if has_href:
            has_href = len(tag['href']) > 5
 
-        """if has_href:
-            tag_href = tag['href'].split('.')[1]"""
-
         if has_href:
             tag_href = tag['href']
 
         #print('tag attrs', tag.attrs)
-        #print(tag['href'].split('.az'))
+        #print(tag.string)
 
         # print(has_href)
         #print('----')
 
+        #print(tag.text)
+        link_text = tag.text
+        text = soup.text
+
         if has_href and (("elan" in tag_href) or ("elani" in tag_href)):
-            print('found =', (("elan" in tag_href) or ("elani" in tag_href)))
+            #print('a')
+            # print('found =', (("elan" in tag_href) or ("elani" in tag_href)))
+            count += 1
+        elif link_text and ' elan edir ' in link_text or ' elani ' in link_text or ' elan ' in link_text:
+            #print('b')
             count += 1
 
+    count_tenders = text.lower().count('elan edir')
+    count += count_tenders
     return count
-
-
-
 
 
 
@@ -71,26 +78,34 @@ def many_tenders(soup): # this function will check the contents of the page for 
     # check the title first
     title = str(soup.title)
     title_is_valid = check_title(title)
-
+    text = str(soup.text)
+    print(text)
     if title_is_valid:
+
         if 'elan' in title.lower() or 'tender' in title.lower():
+            print(3)
             multiple_tenders = False
+            if text.lower().count('elan edir') > 1:
+                print(5)
+                multiple_tenders = True
         elif 'elanlar' in title.lower() or 'tenderlər' in title.lower() or  'elanları' in title.lower():
+            print(4)
             multiple_tenders = True
 
+    else: #now check the contents of the
 
-
-    else: #now check the contents of the page
-        text = str(soup.text)
-        if ('elan' in text.lower() or 'elanı' in text.lower()) and ('tender' in text.lower()):
+        if 'tenderlər' in text.lower() or ' elanlar ' in text.lower() or (text.lower().count('elan edir') > 1) or (text.lower().count('tender elanı') > 1) or (text.lower().count('tender elanları') > 1):
+            print(1)
+            multiple_tenders = True
+        elif text.lower().count(' elan edir ') == 1:
+            print(2)
             multiple_tenders  = False
-        elif 'tenderlər' in text.lower() or 'elanlar' in text.lower():
-            multiple_tenders = True
 
+    #print(text)
+    print('count of tenders', (text.lower().count('elan edir')))
     return multiple_tenders
 
 def check_organization(soup,domain): # this function will check if the page is from a government organization, or a private company/corporation; returns either 'private' or 'government'
-
     # check the title first
     organization = ''
     title = str(soup.title).lower()
@@ -104,3 +119,4 @@ def check_organization(soup,domain): # this function will check if the page is f
         else:
             organization = "private"
     return organization
+
